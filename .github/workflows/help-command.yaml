@@ -1,0 +1,57 @@
+name: build-push-command
+on:
+  repository_dispatch:
+    types: [help-command]
+jobs:
+  help:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+      pull-requests: write
+      packages: write
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PYXIRIS_APP_ID }}
+          private-key: ${{ secrets.PYXIRIS_APP_SECRET }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: write
+          permission-packages: write
+          permission-issues: write
+          permission-pull-requests: write
+          permission-actions: write
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          event-type: help-auth
+          client-payload: ${{ tojson(github.event.client_payload) }}
+            # {
+            #   "pull_request": {
+            #     "head": {
+            #       "ref": "${{ github.event.client_payload.pull_request.head.ref }}",
+            #       "repo": {
+            #         "full_name": "${{ github.event.client_payload.pull_request.head.repo.full_name }}"
+            #       }
+            #     }
+            #   },
+            #   "github": {
+            #     "payload": {
+            #       "issue": {
+            #         "number": "${{ github.event.client_payload.github.payload.issue.number }}"
+            #       },
+            #       "comment": {
+            #         "id": "${{ github.event.client_payload.github.payload.comment.id }}"
+            #       },
+            #       "repository": {
+            #         "full_name": "${{ github.event.client_payload.github.payload.repository.full_name }}"
+            #       }
+            #     }
+            #   },
+            #   "test": ${{ tojson(github.event.client_payload) }}
+            # }
